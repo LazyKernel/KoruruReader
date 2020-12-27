@@ -34,7 +34,7 @@ class MainActivity : AppCompatActivity() {
         // https://medium.com/swlh/intro-to-androidx-activity-result-apis-taking-a-picture-6013c3852c0b
         val takePicture = registerForActivityResult(ActivityResultContracts.TakePicture()) { success: Boolean ->
             if (success) {
-                
+
             }
             else {
                 Toast.makeText(this@MainActivity, "Permission for taking a picture denied", Toast.LENGTH_SHORT).show()
