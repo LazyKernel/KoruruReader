@@ -11,5 +11,5 @@ class DateUtil {
 
     val stringTimestamp: String
         @SuppressLint("SimpleDateFormat")
-        get() = SimpleDateFormat("yyyy-MM-ddTHH:mm:ss.SSS").format(Date())
+        get() = SimpleDateFormat("yyyyMMdd").format(Date())
 }

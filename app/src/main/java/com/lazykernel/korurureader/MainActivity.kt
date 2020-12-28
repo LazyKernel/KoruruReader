@@ -12,6 +12,8 @@ import android.view.MenuItem
 import android.view.View
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.activity.viewModels
+import androidx.core.content.FileProvider
 import androidx.core.net.toUri
 import com.lazykernel.korurureader.util.DateUtil
 import com.lazykernel.korurureader.util.FileUtil
@@ -24,6 +26,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private var imageUri: Uri? = null
+    private val viewModel: ImageViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -34,7 +37,7 @@ class MainActivity : AppCompatActivity() {
         // https://medium.com/swlh/intro-to-androidx-activity-result-apis-taking-a-picture-6013c3852c0b
         val takePicture = registerForActivityResult(ActivityResultContracts.TakePicture()) { success: Boolean ->
             if (success) {
-
+                imageUri?.let { viewModel.selectImage(it) }
             }
             else {
                 Toast.makeText(this@MainActivity, "Permission for taking a picture denied", Toast.LENGTH_SHORT).show()
@@ -43,7 +46,7 @@ class MainActivity : AppCompatActivity() {
 
         findViewById<FloatingActionButton>(R.id.fab).setOnClickListener { view ->
             val file = FileUtil.instance.createTempFile("tmpimg_${DateUtil.instance.stringTimestamp}_", ".jpg")
-            imageUri = file.toUri()
+            imageUri = FileProvider.getUriForFile(this, context.applicationContext.packageName + ".provider", file)
             takePicture.launch(imageUri)
         }
     }
