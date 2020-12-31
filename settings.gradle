@@ -1,2 +1,3 @@
 include ':app'
+include ':tesseract_assets'
 rootProject.name = "KoruruReader"

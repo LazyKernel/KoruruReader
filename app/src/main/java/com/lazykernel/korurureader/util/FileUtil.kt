@@ -8,6 +8,7 @@ import android.os.Environment
 import android.provider.MediaStore
 import com.lazykernel.korurureader.MainActivity
 import java.io.File
+import java.io.InputStream
 
 /**
  * A singleton FileUtil class
@@ -23,8 +24,25 @@ class FileUtil {
             MediaStore.Images.Media.getBitmap(MainActivity.context.contentResolver, uri)
         } else {
             val source = ImageDecoder.createSource(MainActivity.context.contentResolver, uri)
-            ImageDecoder.decodeBitmap(source)
+            ImageDecoder.decodeBitmap(source).copy(Bitmap.Config.ARGB_8888, true)
         }
+    }
+
+    /**
+     * Copies an asset file from assets to phone internal storage, if it doesn't already exist
+     * Will be copied to path <prefix> + <assetName> in files directory
+     * Returns true if copied, false otherwise (including if file already exists)
+     */
+    fun copyAssetToFilesIfNotExist(prefix: String, assetName: String): Boolean {
+        val file = File(MainActivity.context.filesDir.absolutePath, prefix + assetName)
+        if (file.exists()) {
+            return false
+        }
+
+        val inputStream: InputStream = MainActivity.context.assets.open(assetName)
+        File(MainActivity.context.filesDir.absolutePath, prefix).mkdirs()
+        file.appendBytes(inputStream.readBytes())
+        return true
     }
 
     /**

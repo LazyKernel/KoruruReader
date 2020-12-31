@@ -21,6 +21,7 @@ import com.lazykernel.korurureader.activityresultcontracts.OpenImage
 import com.lazykernel.korurureader.util.DateUtil
 import com.lazykernel.korurureader.util.FileUtil
 import com.lazykernel.korurureader.util.NotificationUtil
+import com.lazykernel.korurureader.util.TesseractUtil
 
 class MainActivity : AppCompatActivity() {
 
@@ -37,7 +38,7 @@ class MainActivity : AppCompatActivity() {
     private var selectFAB: FloatingActionButton? = null
 
     private var takePicture: ActivityResultLauncher<Uri>? = null
-    private var pickPicture: ActivityResultLauncher<Void?>? = null
+    private var pickPicture: ActivityResultLauncher<Array<out String>>? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -69,7 +70,7 @@ class MainActivity : AppCompatActivity() {
         selectFAB = findViewById<FloatingActionButton>(R.id.fab_select).apply {
             setOnClickListener { _ ->
                 toggleFABMenu()
-                pickPicture?.launch()
+                pickPicture?.launch(Array(1) { "image/*" })
             }
         }
         baseFAB = findViewById<FloatingActionButton>(R.id.fab_base).apply {
@@ -80,15 +81,25 @@ class MainActivity : AppCompatActivity() {
     private fun registerActivityResults() {
         takePicture = registerForActivityResult(ActivityResultContracts.TakePicture()) { success: Boolean ->
             if (success) {
-                imageUri?.let { viewModel.selectImage(it) }
+                val text = imageUri?.let {
+                    viewModel.selectImage(it)
+                    TesseractUtil.instance.extractTextFromImage(it)
+                }
+
+                text?.let { viewModel.selectText(it) }
             }
             else {
                 Toast.makeText(this@MainActivity, "Permission for taking a picture denied", Toast.LENGTH_SHORT).show()
             }
         }
 
-        pickPicture = registerForActivityResult(OpenImage()) { uri: Uri? ->
-            uri?.let { viewModel.selectImage(it) }
+        pickPicture = registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri: Uri? ->
+            val text = uri?.let {
+                viewModel.selectImage(it)
+                TesseractUtil.instance.extractTextFromImage(it)
+            }
+
+            text?.let { viewModel.selectText(it) }
         }
     }
 

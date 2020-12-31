@@ -11,7 +11,7 @@ class OpenImage : ActivityResultContract<Void?, Uri>() {
     override fun createIntent(context: Context, input: Void?): Intent {
         val getIntent: Intent = Intent(Intent.ACTION_GET_CONTENT).setType("image/*")
         val pickIntent: Intent = Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI).setType("image/*")
-        return Intent.createChooser(getIntent, "Select image").putExtra(Intent.EXTRA_INITIAL_INTENTS, Array(1) { pickIntent })
+        return Intent.createChooser(getIntent, "Select an image").putExtra(Intent.EXTRA_INITIAL_INTENTS, Array(1) { pickIntent })
     }
 
     override fun parseResult(resultCode: Int, intent: Intent?): Uri? {
