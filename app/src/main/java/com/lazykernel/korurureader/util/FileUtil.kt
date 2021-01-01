@@ -21,7 +21,7 @@ class FileUtil {
 
     fun loadUriToBitmap(uri: Uri): Bitmap {
         return if (Build.VERSION.SDK_INT < 28) {
-            MediaStore.Images.Media.getBitmap(MainActivity.context.contentResolver, uri)
+            MediaStore.Images.Media.getBitmap(MainActivity.context.contentResolver, uri).copy(Bitmap.Config.ARGB_8888, true)
         } else {
             val source = ImageDecoder.createSource(MainActivity.context.contentResolver, uri)
             ImageDecoder.decodeBitmap(source).copy(Bitmap.Config.ARGB_8888, true)

@@ -1,5 +1,8 @@
 package com.lazykernel.korurureader
 
+import android.graphics.Canvas
+import android.graphics.Color
+import android.graphics.Paint
 import android.os.Bundle
 import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
@@ -33,6 +36,20 @@ class FirstFragment : Fragment() {
         viewModel.selectedImage.observe(viewLifecycleOwner, Observer { uri ->
             val imageView: ImageView = view.findViewById(R.id.testImageView)
             imageView.setImageBitmap(FileUtil.instance.loadUriToBitmap(uri))
+        })
+        viewModel.selectedRegions.observe(viewLifecycleOwner, Observer { regions ->
+            val imageView: ImageView = view.findViewById(R.id.testImageView)
+            viewModel.selectedImage.value?.let {
+                val bitmap = FileUtil.instance.loadUriToBitmap(it)
+                val canvas = Canvas(bitmap)
+                val paint = Paint().apply {
+                    color = Color.CYAN
+                    style = Paint.Style.STROKE
+                }
+                canvas.drawBitmap(bitmap, 0f, 0f, null)
+                regions.forEach { rect -> canvas.drawRect(rect, paint) }
+                imageView.setImageBitmap(bitmap)
+            }
         })
         view.findViewById<Button>(R.id.button_first).setOnClickListener {
             findNavController().navigate(R.id.action_FirstFragment_to_SecondFragment)

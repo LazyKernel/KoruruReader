@@ -50,6 +50,12 @@ class MainActivity : AppCompatActivity() {
         registerActivityResults()
     }
 
+    override fun onDestroy() {
+        TesseractUtil.instance.destroy()
+        FileUtil.instance.deleteTempFiles()
+        super.onDestroy()
+    }
+
     private fun init() {
         context = this
         NotificationUtil.instance.createNotificationChannel()
@@ -83,7 +89,10 @@ class MainActivity : AppCompatActivity() {
             if (success) {
                 val text = imageUri?.let {
                     viewModel.selectImage(it)
-                    TesseractUtil.instance.extractTextFromImage(it)
+                    TesseractUtil.instance.setImage(it)
+                    val str = TesseractUtil.instance.extractTextFromImage()
+                    viewModel.selectRegions(TesseractUtil.instance.getImageTextRegions())
+                    str
                 }
 
                 text?.let { viewModel.selectText(it) }
@@ -96,10 +105,14 @@ class MainActivity : AppCompatActivity() {
         pickPicture = registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri: Uri? ->
             val text = uri?.let {
                 viewModel.selectImage(it)
-                TesseractUtil.instance.extractTextFromImage(it)
+                TesseractUtil.instance.setImage(it)
+
+                viewModel.selectRegions(TesseractUtil.instance.getTextBlockRegions())
+                //TesseractUtil.instance.extractTextFromImage()
+                "a"
             }
 
-            text?.let { viewModel.selectText(it) }
+            //text?.let { viewModel.selectText(it) }
         }
     }
 
