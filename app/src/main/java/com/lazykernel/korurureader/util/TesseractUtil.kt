@@ -9,6 +9,9 @@ import com.lazykernel.korurureader.MainActivity
 import java.util.*
 import kotlin.collections.ArrayList
 
+/**
+ * A singleton class for interacting with Tesseract OCR
+ */
 class TesseractUtil {
     companion object {
         val instance = TesseractUtil()
@@ -26,17 +29,25 @@ class TesseractUtil {
         FileUtil.instance.copyAssetToFilesIfNotExist("tesseract/tessdata/", "jpn.traineddata")
         FileUtil.instance.copyAssetToFilesIfNotExist("tesseract/tessdata/", "jpn_vert.traineddata")
 
-        // Init with japanese, japanese vertical and english
+        // Init with japanese and japanese vertical
         if (!baseAPI.init(TESSERACT_BASE_DIR, "jpn+jpn_vert")) {
             Toast.makeText(MainActivity.context, "Couldn't init Tesseract in $TESSERACT_BASE_DIR", Toast.LENGTH_SHORT).show()
         }
     }
 
 
-    // setImage -> getTextBlockRegions -> pre-processing -> extractTextFromImage -> post-processing
-    // pre-processing: detect text orientation (horizontal vs vertical)
-    // post-processing: iterate through words and place them in the correct text block (intersecting block)
+    // setImage -> getTextBlockRegions -> pre-processing -> extractTextFromImage
+    // TODO: pre-processing: detect text orientation (horizontal vs vertical)
 
+    /**
+     * Prepares Tesseract for detecting text block regions
+     *
+     * Loads image from the specified [uri]
+     *
+     * Resets the cached regions and text regions
+     *
+     * @param   uri an uri to the image
+     */
     fun setImage(uri: Uri) {
         // Reset cache
         cachedRegions = null
@@ -48,6 +59,17 @@ class TesseractUtil {
         baseAPI.setImage(currentImage)
     }
 
+    /**
+     * Returns an [ArrayList] of [Rect]s that contains the largest non-overlapping regions returned
+     * from Tesseract that completely contain other overlapping regions mistakenly identified by
+     * Tesseract. This function runs in O(n log n) time on average using the following assumption:
+     * If Tesseract's page segmentation algorithm returns more than 1 region, all outermost non-
+     * overlapping AABBs will fully envelop all other regions within them
+     *
+     * The result of the function is cached. The cache is reset every time [setImage] is called.
+     *
+     * @return list of text block regions
+     */
     fun getTextBlockRegions(): ArrayList<Rect> {
         // Return if cached
         cachedRegions?.let { return it }
@@ -56,6 +78,7 @@ class TesseractUtil {
 
         // Instantly return if empty or size 1
         if (rects.size <= 1) {
+            cachedRegions = rects
             return rects
         }
 
@@ -112,11 +135,26 @@ class TesseractUtil {
         return outerRects
     }
 
+    /**
+     * Returns an [ArrayList] of [String]s corresponding to the text regions returned from
+     * [getTextBlockRegions]. [getTextBlockRegions] MUST be called after [setImage] and before this
+     * function. Currently iterates over Tesseract OCR results on word by word basis and appends
+     * text to the end of the correct text block. If Tesseract starts splitting words between
+     * different text blocks, change the level to symbol level (slower but more accurate).
+     *
+     * Runs the actual OCR process so can take multiple minutes for larger images and on slower
+     * devices.
+     *
+     * The result of the function is cached. The cache is reset every time [setImage] is called.
+     *
+     * @return list of strings corresponding to the text blocks
+     */
     fun extractTextFromImage(): ArrayList<String> {
         // Return if cached
         cachedTextRegions?.let { return it }
 
-        // Set page seg mode to single block (either horizontal or vertical based on preprocessing)
+        // Set page seg mode to single block (either horizontal or vertical based on pre-processing)
+        // TODO: vertical vs horizontal pre-processing
         baseAPI.pageSegMode = TessBaseAPI.PageSegMode.PSM_SINGLE_BLOCK_VERT_TEXT
         // Clear previous result just detecting text blocks
         baseAPI.setImage(currentImage)
@@ -128,7 +166,7 @@ class TesseractUtil {
         val list = ArrayList<String>(Collections.nCopies(cachedRegions!!.size, ""))
         it.begin()
         do {
-            // Going for word for now, change to symbol if having problems with accuracy
+            // Going for word level for now, change to symbol if having problems with accuracy
             val wordRect = it.getBoundingRect(TessBaseAPI.PageIteratorLevel.RIL_WORD)
             val wordText = it.getUTF8Text(TessBaseAPI.PageIteratorLevel.RIL_WORD)
             cachedRegions!!.forEachIndexed { index, rect ->
@@ -143,6 +181,10 @@ class TesseractUtil {
         return list
     }
 
+    /**
+     * Destroy the Tesseract BaseAPI
+     * @see TessBaseAPI
+     */
     fun destroy() {
         baseAPI.end()
     }
