@@ -87,10 +87,8 @@ class TesseractUtil {
 
         fun rectSize(rect: Rect): Int = rect.width() * rect.height()
 
-        // First element is guaranteed to be largest
+        // One of the leftmost elements is guaranteed to be largest
         // because the outer most box on every side must be part of the largest one
-        // exception being if there are multiple rects with the exact same smallest x coordinate
-        // however, this is checked above
         //
         // Worst case O(n^2), average O(n)
         // since outerRects should be quite small, usually around 1 or 2
