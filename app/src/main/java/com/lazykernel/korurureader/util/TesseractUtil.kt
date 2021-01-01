@@ -6,6 +6,7 @@ import android.net.Uri
 import android.widget.Toast
 import com.googlecode.tesseract.android.TessBaseAPI
 import com.lazykernel.korurureader.MainActivity
+import java.util.*
 import kotlin.collections.ArrayList
 
 class TesseractUtil {
@@ -16,6 +17,9 @@ class TesseractUtil {
     private val TESSERACT_BASE_DIR = MainActivity.context.filesDir.absolutePath + "/tesseract/"
     private val baseAPI: TessBaseAPI = TessBaseAPI()
     private var currentImage: Bitmap? = null
+    // regions[i] corresponds to textRegions[i]
+    private var cachedRegions: ArrayList<Rect>? = null
+    private var cachedTextRegions: ArrayList<String>? = null
     init {
         // Load language files from asset packs
         FileUtil.instance.copyAssetToFilesIfNotExist("tesseract/tessdata/", "eng.traineddata")
@@ -29,28 +33,25 @@ class TesseractUtil {
     }
 
 
-    // setImage -> getTextBlockRegions -> pre-processing -> extractTextFromImage -> getImageTextRegions -> post-processing
+    // setImage -> getTextBlockRegions -> pre-processing -> extractTextFromImage -> post-processing
     // pre-processing: detect text orientation (horizontal vs vertical)
     // post-processing: iterate through words and place them in the correct text block (intersecting block)
 
     fun setImage(uri: Uri) {
+        // Reset cache
+        cachedRegions = null
+        cachedTextRegions = null
+
+        // Reset baseAPI
         currentImage = FileUtil.instance.loadUriToBitmap(uri)
         baseAPI.pageSegMode = TessBaseAPI.PageSegMode.PSM_AUTO_ONLY
         baseAPI.setImage(currentImage)
     }
 
-    fun getImageTextRegions(): ArrayList<Rect> {
-        val it = baseAPI.resultIterator
-        val list = ArrayList<Rect>()
-        it.begin()
-        do {
-            list.add(it.getBoundingRect(TessBaseAPI.PageIteratorLevel.RIL_BLOCK))
-        } while (it.next(TessBaseAPI.PageIteratorLevel.RIL_BLOCK))
-        it.delete()
-        return list
-    }
-
     fun getTextBlockRegions(): ArrayList<Rect> {
+        // Return if cached
+        cachedRegions?.let { return it }
+
         val rects: ArrayList<Rect> = baseAPI.regions.boxRects
 
         // Instantly return if empty or size 1
@@ -106,15 +107,40 @@ class TesseractUtil {
                 }
             }
         }
+
+        cachedRegions = outerRects
         return outerRects
     }
 
-    fun extractTextFromImage(): String {
+    fun extractTextFromImage(): ArrayList<String> {
+        // Return if cached
+        cachedTextRegions?.let { return it }
+
         // Set page seg mode to single block (either horizontal or vertical based on preprocessing)
         baseAPI.pageSegMode = TessBaseAPI.PageSegMode.PSM_SINGLE_BLOCK_VERT_TEXT
         // Clear previous result just detecting text blocks
         baseAPI.setImage(currentImage)
-        return baseAPI.utF8Text
+        // Calling to run ocr
+        baseAPI.utF8Text
+
+        val it = baseAPI.resultIterator
+        // Call getTextBlockRegions first
+        val list = ArrayList<String>(Collections.nCopies(cachedRegions!!.size, ""))
+        it.begin()
+        do {
+            // Going for word for now, change to symbol if having problems with accuracy
+            val wordRect = it.getBoundingRect(TessBaseAPI.PageIteratorLevel.RIL_WORD)
+            val wordText = it.getUTF8Text(TessBaseAPI.PageIteratorLevel.RIL_WORD)
+            cachedRegions!!.forEachIndexed { index, rect ->
+                if (Rect.intersects(wordRect, rect)) {
+                    list[index] += wordText
+                    return@forEachIndexed
+                }
+            }
+        } while (it.next(TessBaseAPI.PageIteratorLevel.RIL_WORD))
+        it.delete()
+        cachedTextRegions = list
+        return list
     }
 
     fun destroy() {

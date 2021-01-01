@@ -87,33 +87,33 @@ class MainActivity : AppCompatActivity() {
     private fun registerActivityResults() {
         takePicture = registerForActivityResult(ActivityResultContracts.TakePicture()) { success: Boolean ->
             if (success) {
-                val text = imageUri?.let {
-                    viewModel.selectImage(it)
-                    TesseractUtil.instance.setImage(it)
-                    val str = TesseractUtil.instance.extractTextFromImage()
-                    viewModel.selectRegions(TesseractUtil.instance.getImageTextRegions())
-                    str
-                }
-
-                text?.let { viewModel.selectText(it) }
+                runOCRAndDisplay(imageUri)
             }
             else {
-                Toast.makeText(this@MainActivity, "Permission for taking a picture denied", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this@MainActivity, "No picture taken", Toast.LENGTH_SHORT).show()
             }
         }
 
         pickPicture = registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri: Uri? ->
-            val text = uri?.let {
-                viewModel.selectImage(it)
-                TesseractUtil.instance.setImage(it)
-
-                viewModel.selectRegions(TesseractUtil.instance.getTextBlockRegions())
-                //TesseractUtil.instance.extractTextFromImage()
-                "a"
+            if (uri == null) {
+                Toast.makeText(this@MainActivity, "No picture selected", Toast.LENGTH_SHORT).show()
             }
-
-            //text?.let { viewModel.selectText(it) }
+            else {
+                runOCRAndDisplay(uri)
+            }
         }
+    }
+
+    private fun runOCRAndDisplay(uri: Uri?) {
+        val text = uri?.let {
+            viewModel.selectImage(it)
+            TesseractUtil.instance.setImage(it)
+            viewModel.selectRegions(TesseractUtil.instance.getTextBlockRegions())
+            TesseractUtil.instance.extractTextFromImage()
+        }
+
+        println(text)
+        text?.let { viewModel.selectText(it.reduce { acc, s -> "$acc\n\n$s" }) }
     }
 
     private fun toggleFABMenu() {
