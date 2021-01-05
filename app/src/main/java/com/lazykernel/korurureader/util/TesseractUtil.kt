@@ -6,6 +6,10 @@ import android.net.Uri
 import android.widget.Toast
 import com.googlecode.tesseract.android.TessBaseAPI
 import com.lazykernel.korurureader.MainActivity
+import org.opencv.android.OpenCVLoader
+import org.opencv.android.Utils
+import org.opencv.core.*
+import org.opencv.imgproc.Imgproc
 import java.util.*
 import kotlin.collections.ArrayList
 
@@ -13,19 +17,15 @@ import kotlin.collections.ArrayList
  * A singleton class for interacting with Tesseract OCR
  */
 class TesseractUtil {
-    companion object {
-        val instance = TesseractUtil()
-    }
-
     private val TESSERACT_BASE_DIR = MainActivity.context.filesDir.absolutePath + "/tesseract/"
     private val baseAPI: TessBaseAPI = TessBaseAPI()
     private var currentImage: Bitmap? = null
     // regions[i] corresponds to textRegions[i]
     private var cachedRegions: ArrayList<Rect>? = null
     private var cachedTextRegions: ArrayList<String>? = null
+    private var horizontal: Boolean = true
     init {
         // Load language files from asset packs
-        FileUtil.instance.copyAssetToFilesIfNotExist("tesseract/tessdata/", "eng.traineddata")
         FileUtil.instance.copyAssetToFilesIfNotExist("tesseract/tessdata/", "jpn.traineddata")
         FileUtil.instance.copyAssetToFilesIfNotExist("tesseract/tessdata/", "jpn_vert.traineddata")
 
@@ -36,8 +36,9 @@ class TesseractUtil {
     }
 
 
-    // setImage -> getTextBlockRegions -> pre-processing -> extractTextFromImage
-    // TODO: pre-processing: detect text orientation (horizontal vs vertical)
+    // setImage -> pre-processing -> getTextBlockRegions -> extractTextFromImage
+    // TODO: pre-processing: to greyscale, remove noise, dewarp, detect text orientation (horizontal vs vertical)
+    // in other words, a rabbit hole I don't wanna go down quite yet
 
     /**
      * Prepares Tesseract for detecting text block regions
@@ -53,10 +54,40 @@ class TesseractUtil {
         cachedRegions = null
         cachedTextRegions = null
 
+        // Recycle previous bitmap
+        currentImage?.recycle()
+
         // Reset baseAPI
         currentImage = FileUtil.instance.loadUriToBitmap(uri)
+        //preProcessImage()
         baseAPI.pageSegMode = TessBaseAPI.PageSegMode.PSM_AUTO_ONLY
         baseAPI.setImage(currentImage)
+    }
+
+    private fun preProcessImage() {
+        // Bouncing between matrices to save memory
+        val mat1 = Mat()
+        val mat2 = Mat()
+        Utils.bitmapToMat(currentImage, mat1)
+
+        // Prepare image for contour detection
+        Imgproc.cvtColor(mat1, mat2, Imgproc.COLOR_BGR2GRAY)
+        Imgproc.GaussianBlur(mat2, mat1, Size(5.0, 5.0), 0.0)
+        Imgproc.adaptiveThreshold(mat1, mat2, 255.0, Imgproc.ADAPTIVE_THRESH_GAUSSIAN_C, Imgproc.THRESH_BINARY_INV, 11, 2.0)
+
+        // Since were dealing with japanese text, use equal width and height to get blocks of text
+        // We can't really try to optimize for spaces or paragraphs since the text can be either
+        // vertical or horizontal
+        val kernel = Imgproc.getStructuringElement(Imgproc.MORPH_RECT, Size(5.0, 5.0))
+        Imgproc.dilate(mat2, mat1, kernel, Point(-1.0, -1.0), 5)
+
+        // Find contours
+        val list: ArrayList<MatOfPoint> = ArrayList()
+        val mat = Mat()
+        Imgproc.findContours(mat1, list, mat, Imgproc.RETR_LIST, Imgproc.CHAIN_APPROX_SIMPLE)
+        list.sortBy { contour -> -Imgproc.contourArea(contour) }
+        Imgproc.drawContours(mat2, list, 0, Scalar(255.0, 255.0, 255.0, 255.0), 2)
+        Utils.matToBitmap(mat1, currentImage)
     }
 
     /**
@@ -184,6 +215,8 @@ class TesseractUtil {
      * @see TessBaseAPI
      */
     fun destroy() {
+        // Recycle previous bitmap
+        currentImage?.recycle()
         baseAPI.end()
     }
 }

@@ -5,23 +5,16 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
 import com.google.android.material.floatingactionbutton.FloatingActionButton
-import com.google.android.material.snackbar.Snackbar
 import androidx.appcompat.app.AppCompatActivity
 import android.view.Menu
 import android.view.MenuItem
-import android.view.View
 import android.widget.Toast
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.activity.result.launch
 import androidx.activity.viewModels
 import androidx.core.content.FileProvider
-import androidx.core.net.toUri
-import com.lazykernel.korurureader.activityresultcontracts.OpenImage
-import com.lazykernel.korurureader.util.DateUtil
-import com.lazykernel.korurureader.util.FileUtil
-import com.lazykernel.korurureader.util.NotificationUtil
-import com.lazykernel.korurureader.util.TesseractUtil
+import com.lazykernel.korurureader.util.*
+import org.opencv.android.OpenCVLoader
 
 class MainActivity : AppCompatActivity() {
 
@@ -51,13 +44,17 @@ class MainActivity : AppCompatActivity() {
     }
 
     override fun onDestroy() {
-        TesseractUtil.instance.destroy()
         FileUtil.instance.deleteTempFiles()
         super.onDestroy()
     }
 
     private fun init() {
         context = this
+
+        if (!OpenCVLoader.initDebug()) {
+            Toast.makeText(this, "Failed to initialize OpenCV", Toast.LENGTH_SHORT).show()
+        }
+
         NotificationUtil.instance.createNotificationChannel()
         NotificationUtil.instance.buildScreenshotNotification(Intent())
         NotificationUtil.instance.showScreenshotNotification()
@@ -106,14 +103,17 @@ class MainActivity : AppCompatActivity() {
 
     private fun runOCRAndDisplay(uri: Uri?) {
         val text = uri?.let {
-            viewModel.selectImage(it)
-            TesseractUtil.instance.setImage(it)
-            viewModel.selectRegions(TesseractUtil.instance.getTextBlockRegions())
-            TesseractUtil.instance.extractTextFromImage()
+            val tesseractUtil = TesseractUtil()
+            viewModel.setImage(it)
+            tesseractUtil.setImage(it)
+            viewModel.setTextRegions(tesseractUtil.getTextBlockRegions())
+            val strings = tesseractUtil.extractTextFromImage()
+            tesseractUtil.destroy()
+            strings
         }
 
         println(text)
-        text?.let { viewModel.selectText(it.reduce { acc, s -> "$acc\n\n$s" }) }
+        text?.let { viewModel.setParsedText(it.fold("") { acc, s -> "$acc\n\n$s" }) }
     }
 
     private fun toggleFABMenu() {

@@ -10,7 +10,8 @@ import android.widget.TextView
 import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.Observer
 import androidx.navigation.fragment.findNavController
-import com.lazykernel.korurureader.util.FileUtil
+import com.lazykernel.korurureader.util.NLPUtil
+import com.worksap.nlp.sudachi.Morpheme
 
 /**
  * A simple [Fragment] subclass as the second destination in the navigation.
@@ -30,8 +31,16 @@ class SecondFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        viewModel.selectedText.observe(viewLifecycleOwner, Observer { text ->
+        viewModel.parsedText.observe(viewLifecycleOwner, Observer { text ->
             val textView: TextView = view.findViewById(R.id.textview_second)
+            val morphemes: Iterable<List<Morpheme>> = NLPUtil().tokenizeString(text)
+
+            morphemes.forEach { list ->
+                list.forEach { word ->
+                    println(word.normalizedForm() + "\t" + word.dictionaryForm() + "\t" + word.readingForm())
+                }
+            }
+
             textView.text = text
         })
 

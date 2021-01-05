@@ -41,7 +41,8 @@ class FileUtil {
 
         val inputStream: InputStream = MainActivity.context.assets.open(assetName)
         File(MainActivity.context.filesDir.absolutePath, prefix).mkdirs()
-        file.appendBytes(inputStream.readBytes())
+        // Copy in 10mb chunks to avoid going oom for larger files
+        inputStream.copyTo(file.outputStream(), 10000)
         return true
     }
 

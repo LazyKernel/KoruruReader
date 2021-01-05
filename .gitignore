@@ -13,3 +13,9 @@
 .externalNativeBuild
 .cxx
 local.properties
+/sdk
+/app/src/main/jniLibs
+
+# Download large files manually
+/tesseract_assets/src/main/assets/system_small.dic
+/tesseract_assets/src/main/assets/JMdict_e.xml

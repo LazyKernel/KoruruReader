@@ -33,11 +33,16 @@ class FirstFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        viewModel.selectedImage.observe(viewLifecycleOwner, Observer { uri ->
+        viewModel.selectedTempBitmap.observe(viewLifecycleOwner, Observer { img ->
             val imageView: ImageView = view.findViewById(R.id.testImageView)
-            imageView.setImageBitmap(FileUtil.instance.loadUriToBitmap(uri))
+            imageView.setImageBitmap(img)
         })
-        viewModel.selectedRegions.observe(viewLifecycleOwner, Observer { regions ->
+
+//        viewModel.selectedImage.observe(viewLifecycleOwner, Observer { uri ->
+//            val imageView: ImageView = view.findViewById(R.id.testImageView)
+//            imageView.setImageBitmap(FileUtil.instance.loadUriToBitmap(uri))
+//        })
+        viewModel.textRegions.observe(viewLifecycleOwner, Observer { regions ->
             val imageView: ImageView = view.findViewById(R.id.testImageView)
             viewModel.selectedImage.value?.let {
                 val bitmap = FileUtil.instance.loadUriToBitmap(it)
