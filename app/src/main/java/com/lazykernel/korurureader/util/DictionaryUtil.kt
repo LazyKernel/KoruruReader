@@ -10,16 +10,20 @@ import com.lazykernel.korurureader.structures.ReadingElement
 import com.lazykernel.korurureader.structures.SenseElement
 import org.xmlpull.v1.XmlPullParser
 import java.io.InputStream
+import com.google.common.io.CountingInputStream
 
 class DictionaryUtil {
     companion object {
         val instance = DictionaryUtil()
     }
 
-    private val dictionary: MutableMap<String, ArrayList<DictionaryEntry>> = mutableMapOf()
+    private val dictionaryPath = MainActivity.context.filesDir.absolutePath + "/dictionary/JMdict_e.xml"
+    private val dictionary: MutableMap<String, ArrayList<Long>> = mutableMapOf()
     private val attributes: MutableMap<String, String> = mutableMapOf()
 
     init {
+        //FileUtil.instance.copyAssetToFilesIfNotExist("dictionary/", "JMdict_e.xml")
+
         // Load dictionary file from asset packs
         prepareDictionary()
         prepareAttributes()
@@ -31,44 +35,36 @@ class DictionaryUtil {
             val attributesObj = Parser.default().parse(stream) as JsonObject
             attributesObj.forEach { t, u -> attributes[t] = u.toString() }
         }
+        inputStream.close()
     }
 
     private fun prepareDictionary() {
-        val inputStream: InputStream = MainActivity.context.assets.open("JMdict_e.xml")
+        val inputStream = CountingInputStream(MainActivity.context.assets.open("JMdict_e.xml"))
         inputStream.use { stream ->
             val parser: XmlPullParser = Xml.newPullParser()
             parser.setFeature(XmlPullParser.FEATURE_PROCESS_NAMESPACES, false)
             parser.setFeature(XmlPullParser.FEATURE_PROCESS_DOCDECL, false)
-            parser.setInput(inputStream, "utf-8")
+            parser.setInput(stream, "utf-8")
             var eventType = parser.eventType
             var currentTag = ""
+            var startByte: Long = 0
             var currentEntry = DictionaryEntry()
 
             while (eventType != XmlPullParser.END_DOCUMENT) {
                 when (eventType) {
                     XmlPullParser.START_TAG -> {
                         currentTag = parser.name
-                        // We can only get attributes in START_TAG event
-                        when (currentTag) {
-                            "lsource" -> {
-                                currentEntry.senseElements.last().languageSource.add(SenseElement.LanguageSource())
-                                for (i in 0 until parser.attributeCount) {
-                                    parseEntry("lsource" + parser.getAttributeName(i), parser.getAttributeValue(i), currentEntry)
-                                }
-                            }
-                            "gloss" -> {
-                                currentEntry.senseElements.last().glosses.add(SenseElement.Gloss())
-                                for (i in 0 until parser.attributeCount) {
-                                    parseEntry("gloss" + parser.getAttributeName(i), parser.getAttributeValue(i), currentEntry)
-                                }
-                            }
+                        if (currentTag == "entry") {
+                            // count - <entry> - enter char
+                            startByte = stream.count - 8
+                            println(stream.count)
                         }
                     }
                     XmlPullParser.TEXT -> parseEntry(currentTag, parser.text, currentEntry)
                     XmlPullParser.END_TAG -> {
                         currentTag = ""
                         if (parser.name == "entry") {
-                            insertEntryToDictionary(currentEntry)
+                            insertEntryToDictionary(currentEntry, startByte)
                             currentEntry = DictionaryEntry()
                         }
                     }
@@ -77,6 +73,66 @@ class DictionaryUtil {
                 eventType = parser.next()
             }
         }
+        inputStream.close()
+    }
+
+    fun getDictionaryEntries(search: String): ArrayList<DictionaryEntry> {
+        val dictionaryEntries: ArrayList<DictionaryEntry> = arrayListOf()
+
+        if (!dictionary.containsKey(search))
+            return dictionaryEntries
+
+        val inputStream: InputStream = MainActivity.context.assets.open("JMdict_e.xml")
+
+        inputStream.use { stream ->
+            val parser: XmlPullParser = Xml.newPullParser()
+            parser.setFeature(XmlPullParser.FEATURE_PROCESS_NAMESPACES, false)
+            parser.setFeature(XmlPullParser.FEATURE_PROCESS_DOCDECL, false)
+            parser.setInput(stream, "utf-8")
+            var eventType = parser.eventType
+            var currentTag = ""
+            var currentEntry = DictionaryEntry()
+
+            for (pos in dictionary[search]!!) {
+                stream.skip(pos)
+                loop@ while (eventType != XmlPullParser.END_DOCUMENT) {
+                    when (eventType) {
+                        XmlPullParser.START_TAG -> {
+                            currentTag = parser.name
+                            // We can only get attributes in START_TAG event
+                            when (currentTag) {
+                                "lsource" -> {
+                                    currentEntry.senseElements.last().languageSource.add(SenseElement.LanguageSource())
+                                    for (i in 0 until parser.attributeCount) {
+                                        parseEntry("lsource" + parser.getAttributeName(i), parser.getAttributeValue(i), currentEntry)
+                                    }
+                                }
+                                "gloss" -> {
+                                    currentEntry.senseElements.last().glosses.add(SenseElement.Gloss())
+                                    for (i in 0 until parser.attributeCount) {
+                                        parseEntry("gloss" + parser.getAttributeName(i), parser.getAttributeValue(i), currentEntry)
+                                    }
+                                }
+                            }
+                        }
+                        XmlPullParser.TEXT -> parseEntry(currentTag, parser.text, currentEntry)
+                        XmlPullParser.END_TAG -> {
+                            currentTag = ""
+                            if (parser.name == "entry") {
+                                dictionaryEntries.add(currentEntry)
+                                currentEntry = DictionaryEntry()
+                                break@loop
+                            }
+                        }
+                    }
+
+                    eventType = parser.next()
+                }
+            }
+        }
+
+        inputStream.close()
+        return dictionaryEntries
     }
 
     private fun parseEntry(tag: String, text: String, entry: DictionaryEntry) {
@@ -118,13 +174,13 @@ class DictionaryUtil {
         }
     }
 
-    private fun insertEntryToDictionary(entry: DictionaryEntry) {
+    private fun insertEntryToDictionary(entry: DictionaryEntry, offset: Long) {
         fun insertInto(key: String) {
             if (dictionary.containsKey(key)) {
-                dictionary[key]!!.add(entry)
+                dictionary[key]!!.add(offset)
             }
             else {
-                dictionary[key] = arrayListOf(entry)
+                dictionary[key] = arrayListOf(offset)
             }
         }
 

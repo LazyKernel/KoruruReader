@@ -43,6 +43,7 @@ class FileUtil {
         File(MainActivity.context.filesDir.absolutePath, prefix).mkdirs()
         // Copy in 10mb chunks to avoid going oom for larger files
         inputStream.copyTo(file.outputStream(), 10000)
+        inputStream.close()
         return true
     }
 
