@@ -10,7 +10,6 @@ import com.lazykernel.korurureader.structures.ReadingElement
 import com.lazykernel.korurureader.structures.SenseElement
 import org.xmlpull.v1.XmlPullParser
 import java.io.InputStream
-import com.google.common.io.CountingInputStream
 
 class DictionaryUtil {
     companion object {
@@ -39,7 +38,7 @@ class DictionaryUtil {
     }
 
     private fun prepareDictionary() {
-        val inputStream = CountingInputStream(MainActivity.context.assets.open("JMdict_e.xml"))
+        val inputStream = MainActivity.context.assets.open("JMdict_e.xml")
         inputStream.use { stream ->
             val parser: XmlPullParser = Xml.newPullParser()
             parser.setFeature(XmlPullParser.FEATURE_PROCESS_NAMESPACES, false)
@@ -47,24 +46,18 @@ class DictionaryUtil {
             parser.setInput(stream, "utf-8")
             var eventType = parser.eventType
             var currentTag = ""
-            var startByte: Long = 0
             var currentEntry = DictionaryEntry()
 
             while (eventType != XmlPullParser.END_DOCUMENT) {
                 when (eventType) {
                     XmlPullParser.START_TAG -> {
                         currentTag = parser.name
-                        if (currentTag == "entry") {
-                            // count - <entry> - enter char
-                            startByte = stream.count - 8
-                            println(stream.count)
-                        }
                     }
                     XmlPullParser.TEXT -> parseEntry(currentTag, parser.text, currentEntry)
                     XmlPullParser.END_TAG -> {
                         currentTag = ""
                         if (parser.name == "entry") {
-                            insertEntryToDictionary(currentEntry, startByte)
+                            insertEntryToDictionary(currentEntry, 0)
                             currentEntry = DictionaryEntry()
                         }
                     }

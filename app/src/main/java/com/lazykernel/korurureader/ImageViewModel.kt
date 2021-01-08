@@ -21,6 +21,9 @@ class ImageViewModel : ViewModel() {
     private val mutableTempBitmap = MutableLiveData<Bitmap>()
     val selectedTempBitmap: LiveData<Bitmap> get() = mutableTempBitmap
 
+    private val mutableSearchEntry = MutableLiveData<String>()
+    val searchEntry: LiveData<String> get() = mutableSearchEntry
+
     fun setImage(uri: Uri) {
         mutableImage.value = uri
     }
@@ -35,5 +38,9 @@ class ImageViewModel : ViewModel() {
 
     fun selectTempImage(img: Bitmap) {
         mutableTempBitmap.value = img
+    }
+
+    fun setSearchEntry(search: String) {
+        mutableSearchEntry.value = search
     }
 }

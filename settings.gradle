@@ -1,3 +1,4 @@
+include ':furiganatextview'
 include ':sdk'
 include ':app'
 include ':tesseract_assets'

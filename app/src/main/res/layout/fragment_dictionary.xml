@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/dictLayout"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:layout_marginVertical="7dp"
+    android:layout_marginHorizontal="16dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="horizontal"
+        android:baselineAligned="false">
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_weight=".30"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <se.fekete.furiganatextview.furiganaview.FuriganaTextView
+                android:id="@+id/dictSlug"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="&lt;ruby&gt;今日&lt;rt&gt;きょう&lt;/rt&gt;&lt;/ruby&gt;"
+                android:textAppearance="@style/TextAppearance.AppCompat.Title"
+                app:contains_ruby_tags="true"
+                android:layout_marginLeft="7dp"/>
+
+            <TextView
+                android:id="@+id/commonTag"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:text="common"
+                android:background="@drawable/dict_hg_shape"
+                android:backgroundTint="#8abc83"
+                android:layout_margin="7dp"
+                android:textSize="12sp"
+                android:textColor="#ffffff" />
+
+            <TextView
+                android:id="@+id/jlptTag"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:text="JLPT level"
+                android:background="@drawable/dict_hg_shape"
+                android:backgroundTint="#909dc0"
+                android:layout_marginVertical="3dp"
+                android:layout_marginHorizontal="7dp"
+                android:textSize="12sp"
+                android:textColor="#ffffff" />
+
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/mainData"
+            android:layout_width="0dp"
+            android:layout_weight="0.70"
+            android:layout_alignParentRight="true"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/dictSenses"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content" />
+
+            <TextView
+                android:id="@+id/dictOtherForms"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content" />
+
+        </LinearLayout>
+    </LinearLayout>
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/more_on_jisho"
+        android:id="@+id/jisho_details_link"
+        android:textAlignment="textEnd"/>
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="2dp"
+        android:background="?android:attr/listDivider"/>
+</LinearLayout>
