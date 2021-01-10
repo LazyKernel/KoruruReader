@@ -13,4 +13,6 @@
     <string name="ss_channel_desc">Channel for Koruru screenshot notification</string>
 
     <string name="more_on_jisho">More details on Jisho</string>
+    <string name="jisho_quick_search">Jisho Quick Search</string>
+    <string name="word_and_reading">%1$s 【%2$s】</string>
 </resources>

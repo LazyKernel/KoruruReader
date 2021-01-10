@@ -25,7 +25,7 @@
                 android:id="@+id/dictSlug"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="&lt;ruby&gt;今日&lt;rt&gt;きょう&lt;/rt&gt;&lt;/ruby&gt;"
+                android:text="&lt;ruby&gt;例え&lt;rt&gt;たとえ&lt;/rt&gt;&lt;/ruby&gt;"
                 android:textAppearance="@style/TextAppearance.AppCompat.Title"
                 app:contains_ruby_tags="true"
                 android:layout_marginLeft="7dp"/>
@@ -82,7 +82,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="@string/more_on_jisho"
-        android:id="@+id/jisho_details_link"
+        android:id="@+id/jishoDetailsLink"
         android:textAlignment="textEnd"/>
     <View
         android:layout_width="match_parent"

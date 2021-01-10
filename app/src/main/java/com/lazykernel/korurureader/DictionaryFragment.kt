@@ -11,6 +11,7 @@ import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.Observer
 import com.android.volley.Response
 import com.lazykernel.korurureader.util.JishoUtil
+import org.json.JSONArray
 
 /**
  * A fragment representing a list of Items.
@@ -42,6 +43,7 @@ class DictionaryFragment : Fragment() {
         if (view is RecyclerView) {
             with(view) {
                 layoutManager = LinearLayoutManager(context)
+                adapter = DictionaryRecyclerViewAdapter(JSONArray())
             }
         }
         return view
