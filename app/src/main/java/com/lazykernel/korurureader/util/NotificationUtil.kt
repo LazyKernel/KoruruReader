@@ -35,7 +35,7 @@ class NotificationUtil {
     }
 
     fun buildScreenshotNotification(intent: Intent) {
-        val pendingIntent = PendingIntent.getActivity(MainActivity.context, 0, intent, 0)
+        val pendingIntent = PendingIntent.getActivity(MainActivity.context, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT)
         ssBuilder = NotificationCompat.Builder(MainActivity.context, CHANNEL_ID)
                 .setSmallIcon(R.drawable.ic_notif)
                 .setContentTitle("Koruru")

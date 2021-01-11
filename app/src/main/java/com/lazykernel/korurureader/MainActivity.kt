@@ -14,7 +14,6 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.core.content.FileProvider
 import com.lazykernel.korurureader.util.*
-import org.opencv.android.OpenCVLoader
 
 class MainActivity : AppCompatActivity() {
 
@@ -41,6 +40,11 @@ class MainActivity : AppCompatActivity() {
         init()
         setupFABs()
         registerActivityResults()
+
+        val existingUri = savedInstanceState?.getParcelable<Uri>("imageUri")
+        if (existingUri != null) {
+            runOCRAndDisplay(existingUri)
+        }
     }
 
     override fun onDestroy() {
@@ -51,14 +55,10 @@ class MainActivity : AppCompatActivity() {
     private fun init() {
         context = this
 
-        if (!OpenCVLoader.initDebug()) {
-            Toast.makeText(this, "Failed to initialize OpenCV", Toast.LENGTH_SHORT).show()
-        }
-
         NotificationUtil.instance.createNotificationChannel()
-        NotificationUtil.instance.buildScreenshotNotification(Intent())
+        NotificationUtil.instance.buildScreenshotNotification(Intent(this, TakeScreenshotActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK })
         NotificationUtil.instance.showScreenshotNotification()
-        // TODO: create screenshot intent for notification
     }
 
     private fun setupFABs() {

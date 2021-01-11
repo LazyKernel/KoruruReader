@@ -33,6 +33,11 @@ class TesseractUtil {
         if (!baseAPI.init(TESSERACT_BASE_DIR, "jpn+jpn_vert")) {
             Toast.makeText(MainActivity.context, "Couldn't init Tesseract in $TESSERACT_BASE_DIR", Toast.LENGTH_SHORT).show()
         }
+
+        // Init OpenCV
+        if (!OpenCVLoader.initDebug()) {
+            Toast.makeText(MainActivity.context, "Failed to initialize OpenCV", Toast.LENGTH_SHORT).show()
+        }
     }
 
 
